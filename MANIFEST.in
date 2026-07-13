@@ -1,0 +1,19 @@
+include LICENSE
+include README.md
+include THIRD_PARTY_LICENSES.md
+
+recursive-include pymisb *.py
+
+prune tests
+prune pymisb.egg-info
+prune dist
+prune build
+prune output
+prune sample
+prune assets
+
+global-exclude __pycache__
+global-exclude *.pyc
+global-exclude .DS_Store
+global-exclude setup.cfg
+global-exclude *.egg-info

@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pymisb"
+version = "2.0.1"
+description = "MISB ST0601 / STANAG 4609 mux, demux & live streaming library for Python"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.12"
+authors = [
+    {name = "Fran Raga", email = "franka1986@gmail.com"},
+]
+keywords = ["dji", "misb", "stanag", "klv", "st0601", "st0903", "vmti", "drone", "telemetry", "gis", "streaming"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Topic :: Multimedia :: Video",
+    "Topic :: Scientific/Engineering :: GIS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+
+[project.urls]
+Homepage = "https://github.com/All4Gis/pymisb"
+Repository = "https://github.com/All4Gis/pymisb"
+Issues = "https://github.com/All4Gis/pymisb/issues"
+
+[project.scripts]
+pymisb-mux = "pymisb.mux.engine:main"
+pymisb-demux = "pymisb.demux.engine:main"
+pymisb-stream = "pymisb.stream.engine:main"
+pymisb-vmti = "pymisb.vmti.engine:main"
+
+[tool.setuptools.packages.find]
+include = ["pymisb*"]
+
+[project.optional-dependencies]
+test = ["pytest>=7.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

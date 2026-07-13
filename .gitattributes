@@ -1,0 +1,24 @@
+# Normalize line endings: let Git decide text files and store them with LF.
+* text=auto
+
+# Source/text files always stored with LF in the repo.
+*.py   text eol=lf
+*.md   text eol=lf
+*.txt  text eol=lf
+*.csv  text eol=lf
+*.json text eol=lf
+*.cfg  text eol=lf
+*.ini  text eol=lf
+
+# Windows scripts keep CRLF.
+*.ps1  text eol=crlf
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+
+# Binary / media: never touch line endings.
+*.mp4  binary
+*.ts   binary
+*.klv  binary
+*.png  binary
+*.jpg  binary
+*.jpeg binary
