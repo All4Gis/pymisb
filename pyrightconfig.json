@@ -1,0 +1,15 @@
+{
+  "include": ["pymisb"],
+  "exclude": [
+    "pymisb/klvdata/misb0601.py",
+    "pymisb/klvdata/misb0102.py",
+    "pymisb/klvdata/misbEG0104.py",
+    "pymisb/klvdata/misb0903.py"
+  ],
+  "typeCheckingMode": "basic",
+  "reportMissingImports": false,
+  "reportAttributeAccessIssue": "warning",
+  "reportArgumentType": "warning",
+  "reportReturnType": "warning",
+  "reportCallIssue": "warning"
+}
