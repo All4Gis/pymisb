@@ -15,4 +15,5 @@ venv/
 *.ts
 !tests/**/*.ts
 .mypy_cache/
+.ruff_cache/
 .cron-lock

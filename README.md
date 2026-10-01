@@ -12,6 +12,7 @@
 | Module | What it does |
 |--------|-------------|
 | **mux** | Turn DJI drone footage + telemetry into STANAG 4609 videos with embedded KLV |
+| **mux (live)** | Mux a continuous MPEG-TS with telemetry dicts that arrive at their own rate |
 | **demux** | Extract and decode KLV telemetry from any STANAG-compliant video file |
 | **stream** | Read KLV in real-time from live UDP/RTP/RTSP streams |
 | **vmti** | Parse MISB ST 0903 VMTI target tracking metadata |
@@ -46,6 +47,32 @@ for pkt in packets:
     print(meta[13])  # Sensor Latitude
 ```
 
+### Live mux — continuous video, telemetry when it arrives
+
+The video is an ongoing MPEG-TS. The drone is polled at some rate, so most
+iterations have no sample. When one does arrive it is a plain dict.
+[`examples/live_mux.py`](examples/live_mux.py) simulates both and writes
+`muxed_data.ts`:
+
+```bash
+python examples/live_mux.py
+```
+
+```python
+from pymisb.mux import LiveMuxer
+
+muxer = LiveMuxer()
+with open("muxed_data.ts", "wb") as fh:
+    for chunk in video_chunks():       # any slice of an MPEG-TS
+        sample = poll_drone()          # dict, or None
+        fh.write(muxer.feed(chunk, sample))
+    fh.write(muxer.close())
+```
+
+`sample` can use `latitude`, `longitude`, `altitude`, `heading` and an
+ISO-8601 `timestamp`. The video has to already be MPEG-TS; an MP4 or a raw
+elementary stream needs `ffmpeg -c copy -f mpegts` first.
+
 ### Stream — real-time KLV from live feeds
 
 ```python
@@ -77,7 +104,8 @@ pymisb/
 │   ├── dji.py            DJI CSV + binary .txt flight record parsers
 │   └── ts.py             Path defaults and KLV stream writer
 ├── mux/
-│   └── engine.py         MPEG-TS muxing (PES/PCR/KLV injection + FFmpeg)
+│   ├── engine.py         MPEG-TS muxing (PES/PCR/KLV injection + FFmpeg)
+│   └── live.py           Live mux: MPEG-TS chunks + telemetry dicts
 ├── demux/
 │   └── engine.py         KLV extraction and decoding from files
 ├── stream/
@@ -205,6 +233,8 @@ from pymisb.common import (
 from pymisb.mux import (
     mux_with_ffmpeg,       # Full mux pipeline (FFmpeg + KLV injection)
     inject_klv_into_ts,    # Low-level: inject KLV into existing TS
+    LiveMuxer,             # Live: MPEG-TS chunks + telemetry dicts
+    metadata_to_klv,       # One telemetry dict -> one ST0601 packet
 )
 ```
 

@@ -200,6 +200,38 @@ def _all_pids(pkts) -> set:
     return {_pid_of(p) for p in pkts if len(p) == 188 and p[0] == 0x47}
 
 
+def _elementary_pids(pmt_pkt: bytes) -> set[int]:
+    """Return the elementary-stream PIDs declared in a PMT packet."""
+    ptr = pmt_pkt[4]
+    table = pmt_pkt[5 + ptr:]
+    if len(table) < 3:
+        return set()
+    section_length = ((table[1] & 0x0F) << 8) | table[2]
+    section = table[3:3 + section_length]
+    if len(section) < 9:
+        return set()
+    program_info_length = ((section[7] & 0x0F) << 8) | section[8]
+    index = 9 + program_info_length
+    end = len(section) - 4  # drop the CRC
+    pids: set[int] = set()
+    while index + 5 <= end:
+        pid = ((section[index + 1] & 0x1F) << 8) | section[index + 2]
+        es_info_length = ((section[index + 3] & 0x0F) << 8) | section[index + 4]
+        pids.add(pid)
+        index += 5 + es_info_length
+    return pids
+
+
+def _rewrite_pmt_packet(pmt_pkt: bytes, klv_pid: int) -> bytes:
+    """Return *pmt_pkt* with a KLV elementary stream added to the PMT."""
+    table = _merged_pmt_table(pmt_pkt, klv_pid)
+    payload = b"\x00" + table
+    packet = bytes([0x47, pmt_pkt[1], pmt_pkt[2], 0x10 | (pmt_pkt[3] & 0x0F)]) + payload
+    if len(packet) > 188:
+        raise RuntimeError("Rewritten PMT does not fit in a single TS packet.")
+    return packet + b"\xFF" * (188 - len(packet))
+
+
 def inject_klv_into_ts(video_ts: str, packets: list[tuple[float, bytes]], out_ts: str) -> str:
     """Inject KLV packets with per-packet PTS into an existing MPEG-TS.
 
@@ -240,18 +272,14 @@ def inject_klv_into_ts(video_ts: str, packets: list[tuple[float, bytes]], out_ts
     used = _all_pids(pkts)
     klv_pid = next(pid for pid in range(0x0100, 0x1FFE) if pid not in used and pid != pmt_pid)
 
-    new_pmt_table = None
-    for p in pkts:
-        if _pid_of(p) == pmt_pid and (p[1] & 0x40):
-            new_pmt_table = _merged_pmt_table(p, klv_pid)
-            break
+    found_pmt = any(_pid_of(p) == pmt_pid and (p[1] & 0x40) for p in pkts)
 
     klv_items = []
     for t_rel, kdata in packets:
         pts = int(round(t_rel * 90000)) & 0x1FFFFFFFF
         klv_items.append((t_rel, _build_pes(kdata, pts), pts))
 
-    if new_pmt_table is None:
+    if not found_pmt:
         raise RuntimeError("Could not find PMT packet to rewrite.")
 
     out_parts = []
@@ -265,9 +293,7 @@ def inject_klv_into_ts(video_ts: str, packets: list[tuple[float, bytes]], out_ts
         if pcr is not None:
             last_t = pcr / 90000.0
         if _pid_of(p) == pmt_pid and (p[1] & 0x40):
-            payload = b"\x00" + new_pmt_table
-            p = bytes([0x47, p[1], p[2], 0x10 | (p[3] & 0x0F)]) + payload
-            p = p + b"\xFF" * (188 - len(p))
+            p = _rewrite_pmt_packet(p, klv_pid)
         while ki < len(klv_items) and klv_items[ki][0] <= last_t:
             chunk, klv_cc = _packetize_pes(klv_pid, klv_items[ki][1], klv_items[ki][2], klv_cc, with_pcr=False)
             out_parts.append(chunk)
