@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pymisb"
-version = "2.0.1"
+version = "2.0.2"
 description = "MISB ST0601 / STANAG 4609 mux, demux & live streaming library for Python"
 readme = "README.md"
 license = "MIT"
